@@ -1,0 +1,4 @@
+# SAS files
+# *.sas7bdat
+*.log 
+*.sas~
