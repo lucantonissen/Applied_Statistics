@@ -31,9 +31,9 @@ UCL = Ybar - qT * sqrt(s/n);
 LCL = Ybar + qT * sqrt(s/n);
 UPL = Ybar - qT * sqrt((n+1)*s/n); 
 LPL = Ybar + qT * sqrt((n+1)*s/n); 
-A=Ybar||LCL||UCL||LPL||UPL;
+A=Ybar||s||LCL||UCL||LPL||UPL;
 
-create DATA from A[colname={'mean' 'LCL' 'UCL' 'LPL' 'UPL'}];
+create DATA from A[colname={'mean' 'variance' 'LCL' 'UCL' 'LPL' 'UPL'}];
 append from A;
 close DATA;
 quit;
