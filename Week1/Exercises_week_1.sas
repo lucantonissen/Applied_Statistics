@@ -3,6 +3,7 @@ LIBNAME SASDATA "/folders/myfolders/Applied_Statistics/Data";
 DATA WEEK1;
 	set SASDATA.IVF;
 	where PER=4;
+	drop IMP PER AGE;
 RUN;
 
 
@@ -37,3 +38,37 @@ create DATA from A[colname={'mean' 'variance' 'LCL' 'UCL' 'LPL' 'UPL'}];
 append from A;
 close DATA;
 quit;
+
+/* Question 1.2.B */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
