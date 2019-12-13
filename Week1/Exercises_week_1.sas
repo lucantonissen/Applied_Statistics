@@ -2,36 +2,37 @@ LIBNAME SASDATA "/folders/myfolders/Applied_Statistics/Data";
 
 DATA WEEK1;
 	set SASDATA.IVF;
-	where PER=4;
+	where PER = 4;
 	drop IMP PER AGE;
 RUN;
 
 
-/* Question 1.1 */
+/* QUESTION 1.1 */
 PROC FREQ data = week1;
 	tables TRT;
 run;
 
 
-/* Question 1.2 */
+/* QUESTION 1.2 */
 
 /* Question 1.2.A */
 PROC IML;
 	use WEEK1;
-	read all var{agem};
+		read all var{agem};
 	close WEEk1;
 	
-	alpha=0.05;
-	Ybar=mean(agem);
-	s=var(agem);
-	n=nrow(agem);
-	qT=quantile('t', alpha/2, n-1);
-	UCL = Ybar - qT * sqrt(s/n);
-	LCL = Ybar + qT * sqrt(s/n);
-	UPL = Ybar - qT * sqrt((n+1)*s/n); 
-	LPL = Ybar + qT * sqrt((n+1)*s/n); 
-	A=Ybar||s||LCL||UCL||LPL||UPL;
+	alpha = 0.05;
+	Ybar = mean(agem);
+	s = var(agem);
+	n = nrow(agem);
+	qT = quantile('t', alpha/2, n-1);
 	
+	LCL = Ybar + qT * sqrt(s/n);
+	UCL = Ybar - qT * sqrt(s/n);
+	LPL = Ybar + qT * sqrt((n+1)*s/n);
+	UPL = Ybar - qT * sqrt((n+1)*s/n); 
+	
+	A = Ybar||s||LCL||UCL||LPL||UPL;
 	create DATA from A[colname={'mean' 'variance' 'LCL' 'UCL' 'LPL' 'UPL'}];
 		append from A;
 	close DATA;
@@ -54,23 +55,23 @@ QUIT;
 /* Question 1.2.C */
 PROC IML;
 	use WEEK1;
-	read all var{agem};
+		read all var{agem};
 	close WEEK1;
 	
-	alpha=0.05;
-	s=var(agem);
-	n=nrow(agem);
-	qCL=quantile('chisquare',
-	alpha/2,n-1);
-	qCU=quantile('chisquare',
-	1-alpha/2,n-1);
-	UCL=(n-1)*s/qCL;
-	LCL=(n-1)*s/qCU;
-	sd=sqrt(s);
-	UCLsd=sqrt((n-1)*s/qCL);
-	LCLsd=sqrt((n-1)*s/qCU);
+	alpha = 0.05;
+	s = var(agem);
+	n = nrow(agem);
+	qCU = quantile('chisquare', 1-alpha/2,n-1);
+	qCL = quantile('chisquare', alpha/2,n-1);
 	
-	A=(s||LCL||UCL)//(sd||LCLsd||UCLsd);
+	LCL = (n-1)*s/qCU;
+	UCL = (n-1)*s/qCL;
+	
+	sd = sqrt(s);
+	LCLsd = sqrt((n-1)*s/qCU);
+	UCLsd = sqrt((n-1)*s/qCL);
+	
+	A = (s||LCL||UCL)//(sd||LCLsd||UCLsd);
 	create SD from A[colname={'statistic' 'LCL' 'UCL'}];
 		append from A;
 	close SD;
@@ -87,31 +88,33 @@ PROC UNIVARIATE data=WEEK1 cibasic;
 RUN;
 
 
-/* Question 1.3 */
+/* QUESTION 1.3 */
 
 /* Question 1.3.A */
 /* Quartile confidence interval (CI)*/
 /* Interquartile range */
 PROC IML;
 	use WEEK1;
-	read all var{BW};
+		read all var{BW};
 	close WEEK1;
 	
-	alpha=0.05;
-	p=0.75;		/* 0.25 first quartile */
-	s=p*(1-p);
-	n=nrow(BW);
-	z=quantile('Normal', 1-alpha/2);
-	pU=p + z * sqrt(s/n);
-	pL=p - z * sqrt(s/n);
-	nU=min(floor(n*pU)+1, n);
-	nL=max(1, floor(n*pL));
+	alpha = 0.05;
+	p = 0.75;		/* 0.25 first quartile */
+	s = p*(1-p);
+	n = nrow(BW);
+	z = quantile('Normal', 1-alpha/2);
+
+	pL = p - z * sqrt(s/n);
+	pU = p + z * sqrt(s/n);
+	nL = max(1, floor(n*pL));
+	nU = min(floor(n*pU)+1, n);
+
 	call sort(BW);
 	call qntl(pct, BW, p);
-	LCL=BW[nL];		/* lower control limit */
-	UCL=BW[nU];		/* upper control limit */
+	UCL = BW[nU];		/* upper control limit */
+	LCL = BW[nL];		/* lower control limit */
 	
-	A=(pct||LCL||UCL||nL||nU);
+	A = (pct||LCL||UCL||nL||nU);
 	create PCTL from A[colname={'pctl' 'LCL' 'UCL' 'LR' 'UR'}];
 		append from A;
 	close PCTL;
@@ -137,13 +140,13 @@ QUIT;	/* meadian +- interquartile range */
 /* Question 1.3.C */
 DATA WEEK1BOXCOX;
 	SET WEEK1;
-	BWMINUS2= (-1/2)*(BW**-2 -1);
-	BWMINUS1= (-1)*(BW**-1 -1);
-	BWMINUS12= (-2)*(BW**-(0.5)-1);
-	BW0= log(BW);
-	BW13= (3)*(BW**(1/3) -1);
-	BW12= (2)*(BW**(1/2) -1);
-	BW2= (0.5)*(BW**(2) -1);
+	BWMINUS2	= (-1/2)*(BW**-2 -1);
+	BWMINUS1	= (-1)*(BW**-1 -1);
+	BWMINUS12	= (-2)*(BW**-(0.5)-1);
+	BW0			= log(BW);
+	BW13		= (3)*(BW**(1/3) -1);
+	BW12		= (2)*(BW**(1/2) -1);
+	BW2			= (0.5)*(BW**(2) -1);
 RUN;
 PROC UNIVARIATE data=WEEK1BOXCOX;
 	histogram BWMINUS2 /normal;
@@ -160,26 +163,27 @@ RUN;
 /* Question 1.3.D */
 PROC IML;	
 	use WEEK1BOXCOX;
-	read all var{BW2};
+		read all var{BW2};
 	close WEEK1BOXCOX;
 	
-	alpha=0.05;
-	Ybar=mean(BW2);
-	s=var(BW2);
-	n=nrow(BW2);
-	qT=quantile('t', alpha/2, n-1);
-	UCL = Ybar - qT * sqrt(s/n);
+	alpha = 0.05;
+	Ybar = mean(BW2);
+	s = var(BW2);
+	n = nrow(BW2);
+	qT = quantile('t', alpha/2, n-1);
+	
 	LCL = Ybar + qT * sqrt(s/n);
-	UPL = Ybar - qT * sqrt((n+1)*s/n); 
+	UCL = Ybar - qT * sqrt(s/n);
 	LPL = Ybar + qT * sqrt((n+1)*s/n); 
+	UPL = Ybar - qT * sqrt((n+1)*s/n); 
 	
 	Ybar = sqrt(2*Ybar + 1);
-	UCL = sqrt(2*UCL + 1);
 	LCL = sqrt(2*LCL + 1);
-	UPL = sqrt(2*UPL + 1);
+	UCL = sqrt(2*UCL + 1);
 	LPL = sqrt(2*LPL + 1);
-	A=Ybar||LCL||UCL||LPL||UPL;
+	UPL = sqrt(2*UPL + 1);
 	
+	A = Ybar||LCL||UCL||LPL||UPL;
 	create DATA from A[colname={'mean' 'LCL' 'UCL' 'LPL' 'UPL'}];
 		append from A;
 	close DATA;
@@ -231,31 +235,31 @@ RUN;
 /* Question 1.3.G */
 DATA WEEK1GIRLBOXCOX;
 	SET WEEK1GIRL;
-	BW2= (0.5)*(BW**(2) -1);
+	BW2 = (0.5)*(BW**(2) -1);
 RUN;
 PROC IML;	
 	use WEEK1GIRLBOXCOX;
-	read all var{BW2};
+		read all var{BW2};
 	close WEEK1GIRLBOXCOX;
-/* 	BW=(0.5)*(BW**(2) -1); */
 	
-	alpha=0.05;
-	Ybar=mean(BW2);
-	s=var(BW2);
-	n=nrow(BW2);
-	qT=quantile('t', alpha/2, n-1);
-	UCL = Ybar - qT * sqrt(s/n);
+	alpha = 0.05;
+	Ybar = mean(BW2);
+	s = var(BW2);
+	n = nrow(BW2);
+	qT = quantile('t', alpha/2, n-1);
+
 	LCL = Ybar + qT * sqrt(s/n);
-	UPL = Ybar - qT * sqrt((n+1)*s/n); 
+	UCL = Ybar - qT * sqrt(s/n);
 	LPL = Ybar + qT * sqrt((n+1)*s/n); 
+	UPL = Ybar - qT * sqrt((n+1)*s/n); 
 	
 	Ybar = sqrt(2*Ybar + 1);
-	UCL = sqrt(2*UCL + 1);
 	LCL = sqrt(2*LCL + 1);
-	UPL = sqrt(2*UPL + 1);
+	UCL = sqrt(2*UCL + 1);
 	LPL = sqrt(2*LPL + 1);
-	A=Ybar||LCL||UCL||LPL||UPL;
+	UPL = sqrt(2*UPL + 1);
 	
+	A = Ybar||LCL||UCL||LPL||UPL;
 	create DATA from A[colname={'mean' 'LCL' 'UCL' 'LPL' 'UPL'}];
 		append from A;
 	close DATA;
@@ -267,34 +271,34 @@ DATA WEEK1BOYBOXCOX;
 RUN;
 PROC IML;	
 	use WEEK1BOYBOXCOX;
-	read all var{BW2};
+		read all var{BW2};
 	close WEEK1BOYBOXCOX;
-/* 	BW=(0.5)*(BW**(2) -1); */
 	
-	alpha=0.05;
-	Ybar=mean(BW2);
-	s=var(BW2);
-	n=nrow(BW2);
-	qT=quantile('t', alpha/2, n-1);
-	UCL = Ybar - qT * sqrt(s/n);
+	alpha = 0.05;
+	Ybar = mean(BW2);
+	s = var(BW2);
+	n = nrow(BW2);
+	qT = quantile('t', alpha/2, n-1);
+
 	LCL = Ybar + qT * sqrt(s/n);
-	UPL = Ybar - qT * sqrt((n+1)*s/n); 
+	UCL = Ybar - qT * sqrt(s/n);
 	LPL = Ybar + qT * sqrt((n+1)*s/n); 
+	UPL = Ybar - qT * sqrt((n+1)*s/n); 
 	
 	Ybar = sqrt(2*Ybar + 1);
-	UCL = sqrt(2*UCL + 1);
 	LCL = sqrt(2*LCL + 1);
-	UPL = sqrt(2*UPL + 1);
+	UCL = sqrt(2*UCL + 1);
 	LPL = sqrt(2*LPL + 1);
-	A=Ybar||LCL||UCL||LPL||UPL;
+	UPL = sqrt(2*UPL + 1);
 	
+	A = Ybar||LCL||UCL||LPL||UPL;
 	create DATA from A[colname={'mean' 'LCL' 'UCL' 'LPL' 'UPL'}];
 		append from A;
 	close DATA;
 QUIT;
 
 
-/* Question 1.4 */
+/* QUESTION 1.4 */
 DATA Q1_4; 
    INPUT Value; 
    DATALINES; 
@@ -327,28 +331,27 @@ RUN;
 
 PROC IML;
 	use Q1_4;
-	read all var{Value};
+		read all var{Value};
 	close Q1_4;
 	
-	alpha=0.05;
-	Ybar=mean(Value);
-	s=var(Value);
-	n=nrow(Value);
+	alpha = 0.05;
+	Ybar = mean(Value);
+	s = var(Value);
+	n = nrow(Value);
 	
-	qT=quantile('t', alpha/2, n-1);
-	meanUCL = Ybar - qT * sqrt(s/n);
+	qT = quantile('t', alpha/2, n-1);
 	meanLCL = Ybar + qT * sqrt(s/n); 
+	meanUCL = Ybar - qT * sqrt(s/n);
 	
-	qCL=quantile('chisquare', alpha/2,n-1);
-	qCU=quantile('chisquare', 1-alpha/2,n-1);
-	sUCL=(n-1)*s/qCL;
-	sLCL=(n-1)*s/qCU;
-	sd=sqrt(s);
-	sdUCL=sqrt((n-1)*s/qCL);
-	sdLCL=sqrt((n-1)*s/qCU);
+	qCL = quantile('chisquare', alpha/2,n-1);
+	qCU = quantile('chisquare', 1-alpha/2,n-1);
+	sLCL = (n-1)*s/qCU;
+	sUCL = (n-1)*s/qCL;
+	sd = sqrt(s);
+	sdLCL = sqrt((n-1)*s/qCU);
+	sdUCL = sqrt((n-1)*s/qCL);
 	
-	A=Ybar||sd||s||meanLCL||meanUCL||sdLCL||sdUCL||sLCL||sUCL;
-	
+	A = Ybar||sd||s||meanLCL||meanUCL||sdLCL||sdUCL||sLCL||sUCL;
 	create DATA from A[colname={
 		'mean' 'sd' 'variance' 
 		'mean_LCL' 'mean_UCL' 
@@ -362,64 +365,159 @@ QUIT;
 /* Question 1.4.C */
 PROC IML;
 	use Q1_4;
-	read all var{Value};
+		read all var{Value};
 	close Q1_4;
 	
-	alpha=0.01;
-	Ybar=mean(Value);
-	s=var(Value);
-	n=nrow(Value);
-	qT=quantile('t', alpha/2, n-1);
-	UPL = Ybar - qT * sqrt((n+1)*s/n); 
-	LPL = Ybar + qT * sqrt((n+1)*s/n); 
-	A=LPL||UPL;
+	alpha = 0.01;
+	Ybar = mean(Value);
+	s = var(Value);
+	n = nrow(Value);
+	qT = quantile('t', alpha/2, n-1);
 	
+	LPL = Ybar + qT * sqrt((n+1)*s/n); 
+	UPL = Ybar - qT * sqrt((n+1)*s/n); 
+	
+	A = LPL||UPL;
 	create DATA from A[colname={'LPL' 'UPL'}];
 		append from A;
 	close DATA;
 QUIT;
 
 
+/* QUESTION 1.5 */
+
+/* Question 1.5.A */
+PROC IML;
+	logmeanLCL = -0.137;
+	logmeanUCL = 1.128;
+	
+	meanLCL = exp(1)**logmeanLCL;
+	meanUCL = exp(1)**logmeanUCL;
+	
+	A = meanLCL||meanUCL;
+	create DATA from A[colname={'LPL' 'UPL'}];
+		append from A;
+	close DATA;
+QUIT;
 
 
+/* Question 1.5.B */
+/* Can't reject */
 
 
+/* QUESTION 1.6 */
+DATA Q1_6;
+	SET WEEK1;
+	GAlog44 = log(44 - GA);
+RUN;
 
 
+/* Question 1.6.A */
+PROC IML;	
+	use Q1_6;
+		read all var{GAlog44};
+	close Q1_6;
+	
+	alpha=0.05;
+	Ybar=mean(GAlog44);
+	s=var(GAlog44);
+	n=nrow(GAlog44);
+	qT=quantile('t', alpha/2, n-1);
+	
+	LPL = Ybar - qT * sqrt((n+1)*s/n); 
+	UPL = Ybar + qT * sqrt((n+1)*s/n);
+	
+	LPL = 44 - exp(1)**(LPL);
+	UPL = 44 - exp(1)**(UPL);
+	
+	A = LPL||UPL;
+	create DATA from A[colname={'LPL' 'UPL'}];
+		append from A;
+	close DATA;
+QUIT;
 
 
+/* Question 1.6.B */
+PROC IML;	
+	use Q1_6;
+		read all var{GAlog44};
+	close Q1_6;
+	
+	alpha=0.05;
+	Ybar=mean(GAlog44);
+	s=var(GAlog44);
+	n=nrow(GAlog44);
+	qT=quantile('t', alpha/2, n-1);
+	
+	LCL = Ybar + qT * sqrt(s/n);
+	UCL = Ybar - qT * sqrt(s/n);
+	
+	A = LCL||UCL;
+	create DATA from A[colname={'LCL' 'UCL'}];
+		append from A;
+	close DATA;
+QUIT;
 
 
+/* Question 1.6.C */
+ods select Quantiles;
+PROC UNIVARIATE data=Q1_6 CIPCTLDF CIPCTLNORMAL;
+	var GA;
+RUN;
 
 
+/* Question 1.6.D */
+DATA Q1_6D;
+	set WEEK1;
+	if GA <= 38 then PRETERM = 1;
+	else PRETERM = 0;
+RUN;
 
 
+/* Question 1.6.E */
+PROC IML;	
+	use Q1_6D where(PRETERM=1);
+		read all var{FIS};
+	close Q1_6D;
+	
+	avg = mean(FIS);
+	
+	A = avg;
+	create DATA from A[colname={'percentage'}];
+		append from A;
+	close DATA;
+RUN;
+	
+PROC SQL;
+	SELECT avg(FIS)
+	FROM Q1_6D
+	WHERE PRETERM = 1;
+QUIT;
+PROC SQL;
+	SELECT avg(FIS)
+	FROM Q1_6D
+	WHERE PRETERM = 0;
+QUIT;
 
 
+/* Question 1.6.F */
+PROC FREQ data=Q1_6D; /* use this because small n */
+	where PRETERM = 1;
+	tables FIS /binomial(wald wilson exact level=2) alpha=0.1;
+RUN; /* wald */
+PROC FREQ data=Q1_6D;
+	where PRETERM = 0;
+	tables FIS /binomial(wald wilson exact level=2) alpha=0.1;
+RUN;
 
 
+/* Question 1.6.G */
+/* Same as 1.6.F but use Clopper-Pearson (exact) */
 
 
+/* QUESTION 1.7 */
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/* Question 1.7.A */
 
 
 
