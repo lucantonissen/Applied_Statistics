@@ -1,7 +1,6 @@
-
 LIBNAME SASDATA "/folders/myfolders/Applied_Statistics/Data";
 
-/*Question 1 */ 
+/* Question 1 */ 
 
 
 DATA WEEK1;

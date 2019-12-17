@@ -1,5 +1,5 @@
 PCTL = percentile
-LCL = lower control limit
-UCL = upper control limit
+LCL = lower confidence (control) limit
+UCL = upper confidence (control) limit
 LPL = lower prediction limit
 UPL = upper prediction limit
