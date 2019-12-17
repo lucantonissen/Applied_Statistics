@@ -6,6 +6,8 @@ DATA WEEK1;
 	drop IMP PER AGE;
 RUN;
 
+PROC PRINT data=WEEK1;
+RUN;
 
 /* QUESTION 1.1 */
 PROC FREQ data = week1;
@@ -516,45 +518,150 @@ RUN;
 
 
 /* QUESTION 1.7 */
+%MACRO samples(dataset=,ns=,n=);
+	PROC SURVEYSELECT data=&dataset NOPRINT
+		method=urs n=&n out=FINAL;
+	RUN;
+	DATA FINAL;
+		set FINAL;
+		sampleno=1;
+	RUN;
+		%do sn = 2 %to &ns;
+	PROC SURVEYSELECT data=&dataset NOPRINT
+		method=urs n=&n out=SAMPLEI;
+	RUN;
+	DATA SAMPLEI;
+		set SAMPLEI;
+		sampleno= &sn;
+	RUN;
+	DATA FINAL;
+		set Final SAMPLEI;
+	RUN;
+	%end;
+	PROC DATASETS library=work NOPRINT;
+		delete SAMPLEI;
+	RUN;
+%mend;
+
+%samples(dataset=WEEK1, ns=1000, n=10);
 
 /* Question 1.7.A */
+PROC SQL;
+	CREATE TABLE FINAL_A AS
+		SELECT sampleno,
+			mean(AGEM) as AGEM_mean,
+			var(AGEM) as AGEM_variance
+		FROM FINAL
+		GROUP BY sampleno;
+QUIT;
 
 
+/* Question 1.7.B */
+ods select histogram;
+PROC UNIVARIATE data=FINAL_A cibasic;
+	histogram AGEM_mean/ normal;
+	histogram AGEM_variance/ normal;
+RUN;
+
+/* ????? */
+PROC SQL;
+	CREATE TABLE FINAL_B AS
+		SELECT AGEM_mean, AGEM_variance,
+			(AGEM_mean - 32.668355369) / sqrt(12.137436726) as AGEM_mean_standardized,
+			AGEM_variance / 12.137436726 as AGEM_scaled_sample_variance
+		FROM FINAL_A;
+QUIT;
 
 
+/* Question 1.7.C */
+ods select histogram;
+PROC UNIVARIATE data=FINAL_B cibasic;
+	histogram AGEM_variance/ normal;
+	histogram AGEM_scaled_sample_variance/ normal;
+RUN;
 
 
+/* QUESTION 1.8 */
+
+/* Question 1.8.A */
+PROC TTEST data=WEEK1 h0= 3200 sides=2 alpha=0.05;
+	var BW;
+RUN;
+/* test statistic: 2.20 */
+/* P value: 0.0285 */
+/* ????? */
+/* ¿reject because t > alpha? */
 
 
+/* Question 1.8.B */
+PROC TTEST data=WEEK1 h0=3200 sides=U alpha=0.05;
+	var BW;
+RUN;
+/* P value: 0.0143 */
 
 
+/* Question 1.8.C */
+%samples(dataset=WEEK1, ns=100 , n=253);
+PROC MEANS data=FINAL mean NOPRINT;
+	var BW;
+	by sampleno;
+	output out=MEANSBW mean=BW_MEAN;
+RUN;
+PROC UNIVARIATE data=MEANSBW;
+	hist BW_MEAN / normal;
+RUN;
+%mend;
+/* Yes, it seems like 'n' is large enough to to assume that  */
+/* the sample average 'y¯' follows a normal distribution */
 
 
+/* Question 1.8.D */
+/* The H0 hypothesis will be rejected faster */
 
 
+/* Question 1.8.E */
+PROC MEANS data=WEEK1 mean;
+	var BW;
+RUN;
+
+PROC TTEST data=WEEK1 h0=3200 sides=U alpha=0.05;
+	var BW;
+RUN;
+PROC TTEST data=WEEK1 h0=2800 sides=L alpha=0.05;
+	var BW;
+RUN;
+/* 2 * min p val = 2 * 0.0143 = 0.0285 */
 
 
+/* Question 1.8.F */
+DATA WEEK1_BW;
+	set WEEK1;
+	keep BW;
+RUN;
+%samples(dataset=WEEK1_BW, ns=1000, n=50);
+
+ods graphics off;
+ods exclude all;
+PROC TTEST data=FINAL h0=3200 sides=U alpha=0.05;
+	var BW;
+	by SAMPLENO;
+	ods output ttests=POWER(keep=PROBT);
+RUN;
+ods exclude none;
+ods graphics on;
+
+PROC PRINT data=POWER;
+RUN;
 
 
+/* Question 1.8.G */
+PROC SQL;
+	SELECT count(*) / (SELECT count(*) FROM POWER)
+	FROM POWER
+	WHERE Probt <= 0.05;
+QUIT;
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/* Question 1.8.H */
+/* n = 50  gives 1 - 0.225 = 0.775 */
+/* n = 100 gives 1 - 0.327 = 0.673 */
