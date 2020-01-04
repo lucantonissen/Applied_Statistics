@@ -78,7 +78,7 @@ PROC IML;
 	create MWU from A [colname={'Group' 'N' 'U' 'P'}];
 		append from A;
 	close MWU;
-quit;
+QUIT;
 PROC IML;
 	use Q2_2A_02;
 		read all var{Class N SumOfScores};
@@ -92,7 +92,7 @@ PROC IML;
 	create MWU from A [colname={'Group' 'N' 'U' 'P'}];
 		append from A;
 	close MWU;
-quit;
+QUIT;
 
 
 /* Question 2.2.D */
@@ -292,39 +292,146 @@ PROC FREQ data=Q5;
 RUN;
 
 
+/* QUESTION 2.6 */
+
+/* Question 2.6.A */
+PROC FREQ data=WEEK2;
+	tables FIS*SEX /chisq;
+	exact chisq;
+RUN;
+/* PROC SQL; */
+/* 	SELECT */
+/* 		sum(FIS) / (count(*)-1) as total, */
+/* 		sum(FIS * SEX) / (sum(SEX)-1) as boy, */
+/* 		sum(FIS * (1-SEX)) / (sum((1-SEX))) as girl */
+/* 	FROM WEEK2; */
+/* QUIT; */
 
 
+/* Question 2.6.B */
+%MACRO binary_hypothesis(dataset, var, class); 
+	PROC MEANS data=&dataset n sum noprint;
+		var &var;
+		class &class;
+		output out=OUT n=N sum=COUNT; 
+	RUN;
+
+	DATA OUT0;
+		set OUT;
+		COUNT0 = COUNT; 
+		N0 = N;
+		P0 = COUNT0 / N0; 
+		where &class = 0; 
+		keep COUNT0 N0 P0; 
+	RUN;
+	
+	DATA OUT1;
+		set OUT;
+		COUNT1 = COUNT; 
+		N1 = N;
+		P1 = COUNT1 / N1; 
+		where &class = 1; 
+		keep COUNT1 N1 P1; 
+	RUN;
+	
+/*     PROC PRINT data=OUT0;RUN; */
+/*     PROC PRINT data=OUT1;RUN; */
+    
+    DATA OUT;
+		merge OUT0 OUT1;
+		P = (COUNT0 + COUNT1) / (N0 + N1);
+		STAT = (P0 - P1) / sqrt(P * (1-P) * (1/N0 + 1/N1));
+		CHISQ = STAT **2;
+		P_VALUE = 2*min(cdf("normal", STAT, 0, 1), 1-cdf("normal", STAT, 0, 1)); 
+	RUN;
+	
+	PROC PRINT data=OUT; 
+		var STAT CHISQ P_VALUE; 
+	RUN;
+%MEND;
 
 
+/* Question 2.6.C & 2.6.D */
+%binary_hypothesis(WEEK2, FIS, SEX);
 
 
+/* QUESTION 2.7 */
+
+/* Question 2.7.A */
+PROC FREQ data=WEEK2;
+	where TRT < 2;
+	tables FIS * TRT /chisq;
+	exact fisher chisq;
+RUN;
+PROC FREQ data=WEEK2;
+	where TRT <> 1;
+	tables FIS * TRT /chisq;
+	exact fisher chisq;
+RUN;
+PROC FREQ data=WEEK2;
+	where TRT > 0;
+	tables FIS * TRT /chisq;
+	exact fisher chisq;
+RUN;
+
+/* Question 2.7.B */
+PROC FREQ data=WEEK2;
+	tables FIS * TRT /chisq;
+	exact chisq;
+RUN;
 
 
+/* QUESTION 2.8 */
+DATA Q2_8;
+	input BATCH OUTPUT @@; /* Skip $ for not numeric */
+	datalines;
+	1 102 1 104 1 102 1 97  1 99 1 101 1 103 1 98 1 96 1 97
+	2 99  2 97  2 99  2 100 2 99 2 96  2 99  2 98 2 97 2 98
+	;
+RUN;
+
+/* Question 2.8.A & 2.8.B*/
+PROC TTEST data=Q2_8;
+	class BATCH;
+	var OUTPUT;
+RUN;
+PROC GLM data=Q2_8;
+	class BATCH;
+	model OUTPUT = BATCH;
+	means BATCH /hovtest=BARTLETT hovtest=levene;
+RUN;
 
 
+/* Question 2.8.C */
+ods output WilcoxonScores=Q2_8C (keep= Class N SumOfScores);
+PROC NPAR1WAY data=Q2_8 wilcoxon correct=NO;
+	class BATCH;
+	var OUTPUT;
+	exact wilcoxon;
+RUN;
 
 
+/* Question 2.8.D */
+PROC IML;
+	use Q2_8C;
+		read all var{Class N SumOfScores};
+	close Q2_8C;
+	
+	G = Num(Class); /* {1, 2} */
+	U = SumOfScores - N#(N+1)/2;
+	P = U / prod(N);
+	
+	A = G||N||U||P;
+	create MWU from A [colname={'Group' 'N' 'U' 'P'}];
+		append from A;
+	close MWU;
+QUIT;
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/* Question 2.8.E */
+PROC NPAR1WAY data=Q2_8;
+	class BATCH;
+	var OUTPUT;
+	exact KS; /* /mc */
+	ods select KolSmirExactTest; /* KSMC */
+RUN;
