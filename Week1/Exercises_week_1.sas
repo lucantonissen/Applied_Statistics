@@ -160,7 +160,7 @@ PROC UNIVARIATE data=WEEK1BOXCOX;
 	histogram BW2 /normal;
 	histogram BW /normal;
 RUN;
-
+/* lambda 2 is most appropriate for a normal distribution */
 
 /* Question 1.3.D */
 PROC IML;	
