@@ -153,8 +153,143 @@ RUN;
 /* Perform Q2_2 A, D, E on the whole dataset */
 
 
+/* QUESTION 2.3 */
+
+/* Question 2.3.A */
+%MACRO mann_whitney_u(dataset, class, var);
+	ods select none;
+	PROC NPAR1WAY data=&dataset wilcoxon correct=no;
+		var &var;
+		class &class;
+		ods output WilcoxonScores=OUT_SCORES(rename=(SumOfScores=S));
+		ods output WilcoxonTest=OUT_TEST;
+		ods output KruskalWallisTest=OUT_KRUS;
+	RUN;
+	ods select all;
+	
+	/* proc print data=OUT_TEST;run; */
+	
+	/* Chi square p-value */
+	PROC SQL;
+		CREATE TABLE P_KRUS AS
+			SELECT Prob2 FROM OUT_KRUS;
+	RUN;
+	
+	/* Wilcoxon p-value */
+	PROC SQL;
+		CREATE TABLE P_TABLE AS
+			SELECT Prob2 FROM OUT_TEST;
+	RUN;
+	
+	DATA OUT_SCORES;
+		set OUT_SCORES; 
+		CLASS_ID = _N_ - 1;
+	RUN;
+	
+	PROC TRANSPOSE data=OUT_SCORES
+			out=OUT_N(drop=_NAME_) prefix=N;
+		id CLASS_ID;
+		var N;
+	RUN;
+	
+	PROC TRANSPOSE data=OUT_SCORES
+			out=OUT_S(drop=_NAME_ _LABEL_) PREFIX=S;
+		id CLASS_ID;
+		var S;
+	RUN;
+	
+	DATA RESULT;
+		merge OUT_N OUT_S P_TABLE P_KRUS;
+		P_VALUE = Prob2;
+		P_KRUS = Prob;
+		U0 = S0 - N0 * (N0+1)/2;
+		U1 = S1 - N1 * (N1+1)/2;
+		P0 = U0 / (N0*N1);
+		P1 = U1 / (N0*N1);
+	RUN;
+	
+	title "Mann Whitney U test";
+	PROC PRINT data=OUT_SCORES label noobs;
+		var CLASS_ID CLASS; 
+		label CLASS_ID="class"
+		CLASS="group identifier";
+	RUN;
+
+	PROC PRINT data=RESULT label;
+		var P_VALUE P_KRUS U0 U1 P0 P1;
+		label P_VALUE = "p-value Wilcoxon Test"
+		P_KRUS= "p-value Kruskal-Wallis Test"
+		U0="statistic (U0)" 
+		U1="statistic (U1)" 
+		P0="P(class0 > class1)" 
+		P1="P(class0 <= class1)";
+	RUN;
+	title;
+%MEND;
 
 
+/* Question 2.3.B */
+DATA Q2_3B_01;
+	set Q2_2; 
+	if TRT < 2;
+RUN;
+%mann_whitney_u(Q2_3B_01, TRT, BW);
+DATA Q2_3B_02;
+	set Q2_2; 
+	if TRT <> 1;
+RUN;
+%mann_whitney_u(Q2_3B_02, TRT, BW);
+DATA Q2_3B_12;
+	set Q2_2; 
+	if TRT > 0;
+RUN;
+%mann_whitney_u(Q2_3B_12, TRT, BW);
+
+
+/* QUESTION 2.4 */
+
+/* Question 2.4.A & 2.4.C*/
+DATA Q2_4;
+	set WEEK2;
+	heavy = BW > 4000;
+	late = GA > 41; 
+	keep GA BW heavy late;
+RUN;
+
+
+/* Question 2.4.B */
+PROC TTEST data=Q2_4;
+	class heavy;
+	var GA;
+RUN;
+
+
+/* Question 2.4.D */
+PROC TTEST data=Q2_4;
+	class late;
+	var BW;
+RUN;
+
+
+/* Question 2.4.E */
+/* Most likely reliable (CLT) */
+
+
+/* QUESTION 2.5 */
+DATA Q5;
+	input treatment$ high$ count;
+	datalines;
+	0 0 77
+	0 1 23
+	1 0 81
+	1 1 19
+	;
+RUN;
+PROC FREQ data=Q5;
+	table treatment * high /chisq;
+	weight count ;
+	exact chisq;
+RUN;
 
 
 
