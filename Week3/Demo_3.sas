@@ -1,7 +1,7 @@
-libname SAS "/folders/myfolders/";
+LIBNAME SASDATA "/folders/myfolders/Applied_Statistics/Data";
 
 data IVF_DATASET;
-	set SAS.IVF;
+	set SASDATA.IVF;
 	where PER=4;
 	drop IMP PER AGE;
 run;

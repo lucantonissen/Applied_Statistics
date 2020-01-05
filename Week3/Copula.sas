@@ -1,7 +1,7 @@
-*Data;
+LIBNAME SASDATA "/folders/myfolders/Applied_Statistics/Data";
 
 DATA IVFN;
-SET IVF;
+SET SASDATA.IVF;
 IMP = IMP + (ranuni(1)-0.5);
 KEEP ID PER IMP;
 run;
