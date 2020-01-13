@@ -6,8 +6,6 @@ DATA WEEK1;
 	drop IMP PER AGE;
 RUN;
 
-PROC PRINT data=WEEK1;
-RUN;
 
 /* QUESTION 1.1 */
 PROC FREQ data = week1;
@@ -638,7 +636,7 @@ DATA WEEK1_BW;
 	set WEEK1;
 	keep BW;
 RUN;
-%samples(dataset=WEEK1_BW, ns=1000, n=50);
+%samples(dataset=WEEK1_BW, ns=1000, n=50); /* 100 */
 
 ods graphics off;
 ods exclude all;
