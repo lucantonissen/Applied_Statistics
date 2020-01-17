@@ -255,7 +255,7 @@ LIBNAME SASDATA "/folders/myfolders/Applied_Statistics/Data";
 			YI=YI//U2;
 		end;
 		
-		Total=X||Y||YI
+		Total=X||Y||YI;
 		create GC from Total [colname={'X','Y','YI'}]; 
 			append from Total;       
 		close GC;
@@ -318,7 +318,7 @@ LIBNAME SASDATA "/folders/myfolders/Applied_Statistics/Data";
 			Y=Y//U2C;
 		end;
 		
-		Total=X||Y
+		Total=X||Y;
 		create CC from Total [colname={'X','Y'}]; 
 			append from Total;       
 		close CC;
@@ -625,7 +625,7 @@ DATA RCT;
 RUN;
 
 /* Question 3.4.A */
-PROC TRANSPOSE out=WIDE_RCT(drop = _NAME_ _LABEL_)
+PROC TRANSPOSE out=Q4_wide(drop = _NAME_ _LABEL_)
 			   data=RCT prefix=RESP;
 	by ID;
 	id TIME;
@@ -634,45 +634,77 @@ RUN;
 
 
 /* Question 3.4.B */
-PROC CORR data=WIDE_RCT pearson kendall spearman;
+PROC CORR data=Q4_wide pearson kendall spearman;
 	var RESP1 RESP2;
 RUN;
 
 
 /* Question 3.4.D */
-PROC CORR data=WIDE_RCT pearson fisher(biasadj=no);
+PROC CORR data=Q4_wide pearson fisher(biasadj=no);
 	var RESP1 RESP2;
 RUN;
 
 
-/* Question 3.4.E */
+/* Question 3.4.C & 3.4.E */
 %KendallTau(tau=.35941);
 %SpearmanRho(rho=.50477);
+/* The estimated alpha values for the FGM copula above the */
+/* supported range [-1,1], so the FGM copula is not appropriate */
 
-PROC RANK data=WIDE_RCT out=ranked_a;
+
+/* Question 3.4.F */
+proc IML;
+/* 	τ = α / (2+α) */
+/* 	α = (2t) / (1-t) */
+	estimate_α = 1+1;
+	print estimate_α;
+run;
+/* Estimate for α = 1.12212 */
+
+
+/* Question 3.4.G */
+%SpearmanRho(rho=.50477);
+/* Estimate for α = 1.09357 */
+/* Close to the previous estimate, so we cannot rule out */
+/* that the Clayton's copula appropriately models the */
+/* dependency */
+
+
+/* Question 3.4.H */
+DATA Q4_wide_ranuni;
+	set Q4_wide;
+	RESP1 = RESP1 + 0.1*(ranuni(1)-0.5);
+	RESP2 = RESP2 + 0.1*(ranuni(1)-0.5);
+RUN;
+PROC RANK data=Q4_wide_ranuni out=Q4_ranked;
 	var RESP1 RESP2;
 	ranks rank_RESP1 rank_RESP2;
 RUN;
-PROC MEANS data=ranked_a n;
+PROC MEANS data=Q4_ranked n;
 	var rank_RESP1 rank_RESP1;
 RUN;
-DATA marginals;
-	set ranked_a;
-	RESP1=rank_RESP1/716; /* or 236 if errors*/
-	RESP2=rank_RESP1/716;
+DATA Q4_marginals;
+	set Q4_ranked;
+	U_RESP1=rank_RESP1/716; /* or 236 if errors */
+	U_RESP2=rank_RESP2/716;
 RUN;
-PROC SGPLOT data=WIDE_RCT aspect=1;
+PROC SGPLOT data=Q4_marginals aspect=1;
 	title "Original RESP1 and RESP2";
-	scatter x=RESP1 y=RESP2 / markerattrs=(symbol=circlefilled color='red' size=8 );
+	scatter x=U_RESP1 y=U_RESP2 / markerattrs=(symbol=circlefilled color='red' size=8 );
 RUN;
-%SIM_FGM(nsim=1000, alpha=1.61735, seed=12345);
-PROC SGPLOT data=Fgmc aspect=1;
-	title "Simulated FGM copula";
-	scatter x=X y=Y / markerattrs=(symbol=circlefilled color='black' size=8 );
+/* %SIM_Clay(nsim=700, alpha=1.12212, seed=12345); */
+%SIM_Clay(nsim=700, alpha=1.12212, seed=12345, dataset=Q4_marginals, uvar=U_RESP1);
+%SIM_Frk(nsim=700, alpha=3.62642, seed=12345, dataset=Q4_marginals, uvar=U_RESP1);
+PROC SGPLOT data=Frkc aspect=1;
+	title "Simulated Frank's copula";
+	scatter x=X y=Y / markerattrs=(symbol=circlefilled color='cyan' size=8 );
 RUN;
-
-proc print data=marginals;run;
-/* 716 */
+PROC SGPLOT data=Cc aspect=1;
+	title "Simulated Clayton copula";
+	scatter x=X y=Y / markerattrs=(symbol=circlefilled color='navy' size=8 );
+RUN;
+/* Using a little uniform noise it is clear that Frank's copula */
+/* describes the dependency sturture better than Clayton's */
 
 
 
